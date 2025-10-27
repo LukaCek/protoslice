@@ -29,7 +29,8 @@ steps:
         '--max-instances', '5',
         '--concurrency', '1',
         '--cpu', '2',
-        '--memory', '2Gi'
+        '--memory', '2Gi',
+        '--port', '5252',
       ]
 
 images:
