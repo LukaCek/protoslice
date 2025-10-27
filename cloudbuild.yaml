@@ -1,0 +1,36 @@
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/prototisk/protoslice', '.']
+  
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/prototisk/protoslice']
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud container images list-tags gcr.io/prototisk/protoslice --filter='-tags:*' --format='get(digest)' | \
+        xargs -r -I {} gcloud container images delete -q --force-delete-tags gcr.io/prototisk/protoslice@{}
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      [
+        'run', 'deploy', 'protoslice',
+        '--image', 'gcr.io/prototisk/protoslice',
+        '--platform', 'managed',
+        '--region', 'europe-west1',
+        '--allow-unauthenticated',
+        '--min-instances', '0',
+        '--max-instances', '5',
+        '--concurrency', '1',
+        '--cpu', '2',
+        '--memory', '2Gi'
+      ]
+
+images:
+  - 'gcr.io/prototisk/protoslice'
