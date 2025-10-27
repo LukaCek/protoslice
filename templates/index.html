@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProtoPrice</title>
+</head>
+<body>
+    <form action="/" method="post" enctype="multipart/form-data">
+        <label for="stlFile">Upload STL File:</label>
+        <input type="file" id="stlFile" name="stlFile" accept=".stl" required><br><br>
+        <label for="filament">Select filament</label>
+        <select name="filament" id="filament">
+        {% for filement in filements %}
+            <option value="{{ filement }}">{{ filement }}</option>
+        {% endfor %}
+        </select><br><br>
+
+        <label for="process">Select process</label>
+        <select name="process" id="process">
+        {% for process in processes %}
+            <option value="{{ process }}">{{ process }}</option>
+        {% endfor %}
+        </select><br><br>
+
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>
