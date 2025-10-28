@@ -14,7 +14,7 @@ steps:
       - -c
       - |
         gcloud container images list-tags gcr.io/prototisk/protoslice --filter='-tags:*' --format='get(digest)' | \
-        xargs -r -I {} gcloud container images delete -q --force-delete-tags gcr.io/prototisk/protoslice@{}
+        xargs -r -I {} gcloud container images delete -q --force-delete-tags gcr.io/prototisk/protoslice@{} || true
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
