@@ -158,6 +158,13 @@ def home():
             logger.error("Uploaded file is not an STL file")
             return "Uploaded file must be an STL file", 400
         
+        # set to default if not provided
+        if not filament:
+            filament = 'Bambu PETG Basic @BBL X1C.json'
+        if not process:
+            process = '0.08mm Extra Fine @BBL X1C.json'
+
+        
         # Save the uploaded file to a temporary location
         input_file_path = 'temp/file.stl'
         stlFile.save(input_file_path)
