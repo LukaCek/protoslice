@@ -1,5 +1,5 @@
 #!/bin/bash
-APP_NAME="protoprice"
+APP_NAME="protoslice"
 PORT="5252"
 
 docker build -t $APP_NAME:latest . && \
