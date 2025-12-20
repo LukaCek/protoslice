@@ -143,16 +143,12 @@ def time_to_minutes(time_str):
 def home():
     if request.method == 'POST':
         stlFile = request.files['stlFile']
+        gcp_file_link = request.form.get('gcsLink')
         filament = request.form.get('filament')
         process = request.form.get('process')
         settings = request.form.get('settings')
         settings = json.loads(settings) if settings else {}
         logger.info(f"filament: '{filament}' process: '{process}'")
-
-        # Validate file presence
-        if not stlFile:
-            logger.error("'stlFile' is required")
-            return "'stlFile' is required", 400
         
         # Validate file extension
         if not stlFile.filename.lower().endswith('.stl'):
@@ -165,6 +161,26 @@ def home():
         if not process:
             process = '0.08mm Extra Fine @BBL X1C.json'
 
+        # Validate file presence
+        if not stlFile:
+            if gcp_file_link:
+                # Download file from GCS. Using google_cloud_link to 'temp/file.stl'
+                try:
+                    # Assuming gcp_file_link is a direct URL to the file
+                    # You might need a more robust GCS client for signed URLs or private buckets
+                    import requests
+                    response = requests.get(gcp_file_link)
+                    response.raise_for_status()  # Raise an exception for HTTP errors
+                    with open('temp/file.stl', 'wb') as f:
+                        f.write(response.content)
+                    logger.info(f"Downloaded file from GCS: {gcp_file_link}")
+                except Exception as e:
+                    logger.error(f"Error downloading file from GCS: {e}")
+                    return f"Error downloading file from GCS: {e}", 500
+                    
+            else:
+                logger.error("'stlFile' or 'gcsLink' is required")
+                return "'stlFile' or 'gcsLink' is required", 400
         
         # Save the uploaded file to a temporary location
         input_file_path = 'temp/file.stl'
