@@ -31,7 +31,7 @@ RUN curl -L https://github.com/SoftFever/OrcaSlicer/releases/download/v2.3.0/Orc
     && ln -s /app/squashfs-root/AppRun /usr/local/bin/orcaslicer
 
 # Namestitev Flask prek pip
-RUN pip3 install Flask
+RUN pip3 install Flask requests
 
 # Kopiranje aplikacije in drugih datotek ter ustvarjanje začasne mape
 RUN mkdir temp && mkdir -p /root/.config/OrcaSlicer
