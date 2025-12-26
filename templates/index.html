@@ -7,8 +7,13 @@
 </head>
 <body>
     <form action="{{ url_for(current_version + '.home') }}" method="post" enctype="multipart/form-data">
-        <label for="stlFile">Upload STL File:</label>
-        <input type="file" id="stlFile" name="stlFile" accept=".stl" required><br><br>
+        <div>
+            <label for="stlFile">Upload STL File:</label>
+            <input type="file" id="stlFile" name="stlFile" accept=".stl"><br>
+            <p>or</p>
+            <label for="gcsLink">File link:</label>
+            <input type="text" id="gcsLink" name="gcsLink"><br>
+        </div><br><br>
         <label for="filament">Select filament</label>
         <select name="filament" id="filament">
         {% for filement in filements %}

@@ -3,6 +3,8 @@ import xml.etree.ElementTree as ET
 import zipfile
 import subprocess
 import logging
+import requests
+from requests.exceptions import HTTPError, ConnectionError, Timeout, RequestException
 import json
 import os
 import re
@@ -142,18 +144,19 @@ def time_to_minutes(time_str):
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
-        stlFile = request.files['stlFile']
+        logger.info("POST request received")
+        stlFile = request.files.get('stlFile')
         gcp_file_link = request.form.get('gcsLink')
         filament = request.form.get('filament')
         process = request.form.get('process')
         settings = request.form.get('settings')
         settings = json.loads(settings) if settings else {}
-        logger.info(f"filament: '{filament}' process: '{process}'")
-        
-        # Validate file extension
-        if not stlFile.filename.lower().endswith('.stl'):
-            logger.error("Uploaded file is not an STL file")
-            return "Uploaded file must be an STL file", 400
+
+        logger.info(f"recived ==> stlFile: {stlFile.filename if stlFile else 'No File'}")
+        logger.info(f"recived ==> gcsLink: {gcp_file_link}")
+        logger.info(f"recived ==> filament: {filament}")
+        logger.info(f"recived ==> process: {process}")
+        logger.info(f"recived ==> settings: {settings}")
         
         # set to default if not provided
         if not filament:
@@ -161,30 +164,47 @@ def home():
         if not process:
             process = '0.08mm Extra Fine @BBL X1C.json'
 
+        input_file_path = 'temp/file.stl'
+
         # Validate file presence
         if not stlFile:
             if gcp_file_link:
-                # Download file from GCS. Using google_cloud_link to 'temp/file.stl'
+                # Download file from GCS. Using google_cloud_link to input_file_path
                 try:
-                    # Assuming gcp_file_link is a direct URL to the file
-                    # You might need a more robust GCS client for signed URLs or private buckets
-                    import requests
                     response = requests.get(gcp_file_link)
                     response.raise_for_status()  # Raise an exception for HTTP errors
-                    with open('temp/file.stl', 'wb') as f:
+                    with open(input_file_path, 'wb') as f:
                         f.write(response.content)
-                    logger.info(f"Downloaded file from GCS: {gcp_file_link}")
+                    logger.info(f"Successfully downloaded file from GCS: {gcp_file_link}")
+                except HTTPError as e:
+                    status_code = e.response.status_code
+                    error_text = e.response.text if e.response.text else "No error details provided"
+                    logger.error(f"GCS download failed with HTTP {status_code}: {error_text}")
+                    return f"Error downloading file from GCS: HTTP {status_code} - {error_text}", 500
+                except ConnectionError as e:
+                    logger.error(f"GCS download failed due to connection error: {e}")
+                    return f"Error downloading file from GCS: Connection failed - {str(e)}", 500
+                except Timeout as e:
+                    logger.error(f"GCS download timed out: {e}")
+                    return f"Error downloading file from GCS: Request timed out", 500
+                except RequestException as e:
+                    logger.error(f"GCS download failed with request error: {e}")
+                    return f"Error downloading file from GCS: Request error - {str(e)}", 500
                 except Exception as e:
-                    logger.error(f"Error downloading file from GCS: {e}")
-                    return f"Error downloading file from GCS: {e}", 500
+                    logger.error(f"Unexpected error downloading from GCS: {e}")
+                    return f"Error downloading file from GCS: Unexpected error - {str(e)}", 500
                     
             else:
                 logger.error("'stlFile' or 'gcsLink' is required")
                 return "'stlFile' or 'gcsLink' is required", 400
+        else:
+            # Validate file extension
+            if not stlFile.filename.lower().endswith('.stl'):
+                logger.error("Uploaded file is not an STL file")
+                return "Uploaded file must be an STL file", 400
         
-        # Save the uploaded file to a temporary location
-        input_file_path = 'temp/file.stl'
-        stlFile.save(input_file_path)
+            # Save the uploaded file to a temporary location
+            stlFile.save(input_file_path)
 
         logger.info(f"Running OrcaSlicer with file: {input_file_path}, filament: {filament}, process: {process}")
         success = run_orcaslicer(input_file_path, process, filament)
@@ -201,6 +221,8 @@ def home():
                     return get_data_from_orcaslicer_output()
 
                 return output_data, 500, {'Content-Type': 'application/json'}
+    
+    logger.info("GET request received (non-POST)")
 
     # get list of files in files/filament
     if not os.path.exists('files/filament'):
