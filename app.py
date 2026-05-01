@@ -2,6 +2,7 @@ from flask import Flask, redirect
 from versions.v0_1.routes import app as v0_1
 from versions.v0_1_1.routes import app as v0_1_1
 from versions.v0_1_2.routes import app as v0_1_2
+from versions.v0_1_3.routes import app as v0_1_3
 
 app = Flask(__name__)
 
@@ -9,10 +10,11 @@ app = Flask(__name__)
 app.register_blueprint(v0_1, url_prefix="/v0.1")
 app.register_blueprint(v0_1_1, url_prefix="/v0.1.1")
 app.register_blueprint(v0_1_2, url_prefix="/v0.1.2")
+app.register_blueprint(v0_1_3, url_prefix="/v0.1.3")
 
 @app.route("/")
 def index():
-    return redirect("/v0.1.2/")
+    return redirect("/v0.1.3/")
 
 @app.errorhandler(404)
 def page_not_found(e):
