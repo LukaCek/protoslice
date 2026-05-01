@@ -28,6 +28,17 @@
         {% endfor %}
         </select><br><br>
 
+        <label for="supports">Enable supports</label>
+        <input type="checkbox" id="supports" name="supports" value="true"><br><br>
+
+        <label for="layer_height">Layer height</label>
+        <input type="text" id="layer_height" name="layer_height" placeholder="e.g., 0.20mm"><br>
+        <small>Specify layer height such as "0.20mm" or "0.2"</small>
+        <br><br>
+
+        <label for="include_3mf">Include .3mf file in response (will return as download)</label>
+        <input type="checkbox" id="include_3mf" name="include_3mf" value="true"><br><br>
+
         <input type="submit" value="Submit">
     </form>
 </body>
