@@ -30,7 +30,7 @@ sudo apt install docker.io git -y && git clone https://github.com/LukaCek/protos
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/your-username/protoslice.git
+    git clone https://github.com/LukaCek/protoslice.git
     cd protoslice
     ```
 
@@ -45,7 +45,7 @@ sudo apt install docker.io git -y && git clone https://github.com/LukaCek/protos
 ### Normal install:
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/your-username/protoslice.git
+    git clone https://github.com/LukaCek/protoslice.git
     cd protoslice
     ```
 
