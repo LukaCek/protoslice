@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import math
 from collections import Counter
 from pathlib import Path
 
@@ -36,7 +37,8 @@ def test_cube_fixture_is_deterministic_and_watertight_baseline():
     points = [v for triangle in triangles for v in triangle]
     assert [min(p[i] for p in points) for i in range(3)] == entry["expected_bounds_mm"]["min"]
     assert [max(p[i] for p in points) for i in range(3)] == entry["expected_bounds_mm"]["max"]
-    assert signed_mesh_volume_mm3(triangles) == entry["expected_mesh_volume_mm3"] == 8000.0
+    assert entry["expected_mesh_volume_mm3"] == 8000.0
+    assert math.isclose(signed_mesh_volume_mm3(triangles), entry["expected_mesh_volume_mm3"], rel_tol=0, abs_tol=1e-9)
     # Every undirected edge must occur twice, with opposite directions.
     directed_edges = Counter()
     for a, b, c in triangles:
