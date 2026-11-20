@@ -8,8 +8,10 @@ import math
 class SlicingError(RuntimeError):
     """Stable internal error code; no secret paths or input URLs in public messages."""
 
-    def __init__(self, code: str, message: str):
+    def __init__(self, code: str, message: str, diagnostics: str | None = None):
         self.code = code
+        # Internal diagnostics are omitted from str(exc) and API responses.
+        self.diagnostics = diagnostics
         super().__init__(message)
 
 

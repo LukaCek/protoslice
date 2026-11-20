@@ -23,12 +23,17 @@ def test_real_orca_slices_cube_and_reports_actual_grams(tmp_path):
         work_root=tmp_path,
         timeout_seconds=240,
     )
-    result = engine.slice(SliceRequest(
-        source=CUBE, settings=SliceSettings(
-            supports=False, auto_arrange=True, auto_orient=True,
-            layer_height_mm=0.2,
-        ),
-    ))
+    try:
+        result = engine.slice(SliceRequest(
+            source=CUBE, settings=SliceSettings(
+                supports=False, auto_arrange=True, auto_orient=True,
+                layer_height_mm=0.2,
+            ),
+        ))
+    except SlicingError as exc:
+        # Only the public bundled cube is used with ORCA_LIVE.
+        # Never log customer data in a public CI workflow.
+        pytest.fail(f"Real Orca error ({exc.code}): {exc.diagnostics or str(exc)}")
     try:
         assert result.metrics.used_g > 0
         assert result.metrics.total_time_min > 0

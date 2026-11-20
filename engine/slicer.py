@@ -125,7 +125,11 @@ class SlicingEngine:
                 raise SlicingError("orca_timeout", "OrcaSlicer exceeded the configured timeout") from exc
 
             if process.returncode != 0:
-                raise SlicingError("orca_failed", f"OrcaSlicer returned exit code {process.returncode}")
+                raise SlicingError(
+                    "orca_failed", f"OrcaSlicer returned exit code {process.returncode}",
+                    diagnostics=((stdout or "") + "\n" + (stderr or ""))[-6000:]
+                    if os.environ.get("ORCA_LIVE") == "1" else None,
+                )
 
             report = workspace / "result.json"
             if report.exists():
