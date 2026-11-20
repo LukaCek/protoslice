@@ -20,16 +20,16 @@ def _minutes(gcode: str, prefix: str):
     # Find a named field first, then validate its entire time value so
     # malformed values are errors rather than silently missing metrics.
     match = re.search(
-        r"(?im)(?:^\\s*;?\\s*|;\\s*)" + re.escape(prefix)
-        + r"\\s*[:=]\\s*([^;\\r\\n]+)",
+        r"(?im)(?:^\s*;?\s*|;\s*)" + re.escape(prefix)
+        + r"\s*[:=]\s*([^;\r\n]+)",
         gcode,
     )
     if not match:
         return None
     value = match.group(1).strip()
-    if not re.fullmatch(r"\\s*(?:\\d+\\s*[hms]\\s*)+", value, re.IGNORECASE):
+    if not re.fullmatch(r"\s*(?:\d+\s*[hms]\s*)+", value, re.IGNORECASE):
         raise SlicingError("invalid_statistics", "Malformed print time in Orca output")
-    segments = re.findall(r"(\\d+)\\s*([hms])\\b", value, re.IGNORECASE)
+    segments = re.findall(r"(\d+)\s*([hms])\b", value, re.IGNORECASE)
     units = {"h": 60.0, "m": 1.0, "s": 1.0 / 60.0}
     return round(sum(int(n) * units[unit.lower()] for n, unit in segments), 4)
 
