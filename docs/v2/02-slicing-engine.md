@@ -33,8 +33,8 @@ Rezultat vsebuje absolutno pot do 3MF. Klicatelj mora pred čiščenjem premakni
 
 1. `python -m pip install -r requirements.txt pytest`
 2. `python -m pytest -q tests/baseline tests/engine` — brez Orca, uporablja deterministični subprocess stub.
-3. `ORCA_LIVE=1 python -m pytest -vv tests/integration/test_orca_live.py` — zahteva nameščen OrcaSlicer in dejansko rezanje.
-4. GitHub Actions `v2-orca-smoke.yml` skuša zgraditi dejansko projektno Docker sliko in zagnati realni preizkus.
+3. `ORCA_LIVE=1 python -m pytest -vv -s tests/integration/` — zahteva nameščen OrcaSlicer in dejansko rezanje.
+4. GitHub Actions `v2-orca-smoke.yml` zgradi izvorno Docker sliko in izvrši realne teste brez simuliranega slicerja.\n5. Dodatni primerjalni testi preverijo različni višini plasti (0,12 / 0,28 mm) na kocki ter podporo vklopljeno/izklopljeno na zaprtem T-modelu s previsi. Referenčna modela sta označena s SHA-256 v `tests/fixtures/manifest.json`.
 
 **Ne označi integracijskih testov kot uspešnih**, dokler ni zabeležen zelen CI z dejanskim OrcaSlicerjem. Unit tests niso dokaz fizične pravilnosti rezanja.
 

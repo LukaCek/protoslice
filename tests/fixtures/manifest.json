@@ -18,8 +18,28 @@
           20
         ]
       },
-      "expected_mesh_volume_mm3": 8000.0,
+      "expected_mesh_volume_mm3": 8000,
       "note": "Geometry properties only; no unverified material mass or slicing time."
+    },
+    {
+      "file": "models/overhang_50mm.stl",
+      "sha256": "00b077941810da4a4ddb6e6104d6bc3cba0467b5e6463e4758c551e007b404bf",
+      "format": "ascii_stl",
+      "triangle_count": 28,
+      "expected_bounds_mm": {
+        "min": [
+          -25,
+          0,
+          0
+        ],
+        "max": [
+          25,
+          10,
+          25
+        ]
+      },
+      "expected_mesh_volume_mm3": 4500,
+      "note": "Watertight T-shaped overhang, no auto-orient; used only to compare true support generation."
     }
   ]
 }

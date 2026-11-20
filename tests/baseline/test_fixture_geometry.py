@@ -50,3 +50,26 @@ def test_cube_fixture_is_deterministic_and_watertight_baseline():
     assert len(undirected) == 18
     assert all(count == 2 for count in undirected.values())
     assert all(directed_edges[(v, u)] == directed_edges[(u, v)] for u, v in directed_edges)
+
+
+def test_overhang_fixture_has_valid_signed_volume_and_edges():
+    manifest = json.loads((FIXTURES / "manifest.json").read_text(encoding="utf-8"))
+    fixture = next(x for x in manifest["fixtures"] if x["file"] == "models/overhang_50mm.stl")
+    path = FIXTURES / fixture["file"]
+    assert hashlib.sha256(path.read_bytes()).hexdigest() == fixture["sha256"]
+    triangles = parse_ascii_stl_triangles(path)
+    assert len(triangles) == fixture["triangle_count"] == 28
+    points = [v for face in triangles for v in face]
+    assert [min(p[i] for p in points) for i in range(3)] == fixture["expected_bounds_mm"]["min"]
+    assert [max(p[i] for p in points) for i in range(3)] == fixture["expected_bounds_mm"]["max"]
+    assert math.isclose(signed_mesh_volume_mm3(triangles), fixture["expected_mesh_volume_mm3"], rel_tol=0, abs_tol=1e-9)
+    edges = Counter()
+    for a, b, c in triangles:
+        for u, v in ((a, b), (b, c), (c, a)):
+            edges[(u, v)] += 1
+    undirected = Counter()
+    for (u, v), count in edges.items():
+        undirected[frozenset((u, v))] += count
+    assert len(undirected) == 42
+    assert all(count == 2 for count in undirected.values())
+    assert all(edges[(v, u)] == edges[(u, v)] for u, v in edges)
