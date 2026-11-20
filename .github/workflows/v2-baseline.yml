@@ -1,4 +1,4 @@
-name: ProtoSlice v2 baseline
+name: ProtoSlice v2 baseline and engine
 on:
   pull_request:
     paths:
@@ -6,6 +6,7 @@ on:
       - 'versions/**'
       - 'engine/**'
       - 'tests/baseline/**'
+      - 'tests/engine/**'
       - 'tests/fixtures/**'
       - 'docs/v2/**'
       - '.github/workflows/v2-baseline.yml'
@@ -21,5 +22,5 @@ jobs:
           python-version: '3.11'
       - name: Install test dependencies
         run: python -m pip install -r requirements.txt pytest
-      - name: Run baseline tests (no OrcaSlicer)
-        run: python -m pytest -q tests/baseline/
+      - name: Run baseline and engine tests without OrcaSlicer
+        run: python -m pytest -q tests/baseline/ tests/engine/
