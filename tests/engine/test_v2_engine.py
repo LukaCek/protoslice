@@ -91,8 +91,16 @@ def test_profile_catalog_uses_known_ids():
     assert p.process.is_absolute()
     assert p.filament.is_absolute()
     assert p.printer_name == "Bambu Lab P1S 0.4 nozzle"
-    # Derived PETG profile inherits density, so we must not guess it.
-    assert p.density_g_cm3 is None
+    # Pinned OrcaSlicer 2.3.0 vendor chain resolves the previously missing
+    # effective filament type, density and printer/process settings.
+    assert p.density_g_cm3 == 1.25
+    assert p.filament_effective["filament_type"] == ["PETG"]
+    assert p.filament_effective["filament_density"] == ["1.25"]
+    assert "inherits" not in p.filament_effective
+    assert "inherits" not in p.process_effective
+    assert "inherits" not in p.printer_effective
+    assert p.printer_effective["machine_start_gcode"]
+    assert p.process_effective["layer_height"]
     with pytest.raises(SlicingError) as err:
         catalog.resolve("bambu_p1s_04", "../evil", "bambu_petg_basic")
     assert err.value.code == "unknown_profile"
@@ -113,6 +121,11 @@ def stub_orca(tmp_path):
         "assert all(pathlib.Path(p).is_absolute() for p in args[args.index('--load-settings')+1].split(';'))\n"
         "assert pathlib.Path(args[args.index('--load-filaments')+1]).is_absolute()\n"
         "assert pathlib.Path(args[args.index('--export-slicedata')+1]).is_dir()\n"
+        "profiles=[json.loads(pathlib.Path(p).read_text()) for p in args[args.index('--load-settings')+1].split(';')]\n"
+        "assert all('inherits' not in p for p in profiles)\n"
+        "filament=json.loads(pathlib.Path(args[args.index('--load-filaments')+1]).read_text())\n"
+        "assert filament['filament_density'] == ['1.25']\n"
+        "assert filament['filament_type'] == ['PETG']\n"
         "payload='; filament used [cm3] = 3.21\\n; filament used [g] = 4.07\\n; total estimated time: 0h 12m 0s\\n'\n"
         "if mode == 'invalid_stats': payload='; filament used [cm3] = 3.21\\n'\n"
         "with zipfile.ZipFile(destination,'w') as z: z.writestr('Metadata/plate_1.gcode',payload)\n"
@@ -169,3 +182,27 @@ def test_two_concurrent_jobs_are_isolated(tmp_path, stub_orca, monkeypatch):
     assert all(out.output_3mf.is_file() for out in outputs)
     for out in outputs:
         engine.delete_job(out)
+
+
+def test_all_six_processes_have_resolved_parent_values():
+    from engine.profiles import PROCESSES
+    catalog = ProfileCatalog(ROOT)
+    for quality_id in PROCESSES:
+        selection = catalog.resolve("bambu_p1s_04", quality_id, "bambu_petg_basic")
+        assert selection.process_effective.get("layer_height")
+        assert selection.process_effective.get("wall_loops")
+        assert selection.density_g_cm3 == 1.25
+
+
+def test_real_orca_combines_model_and_total_time_on_one_line():
+    from engine.results import parse_gcode
+    gcode = (
+        "; filament used [cm3] = 3.20\n"
+        "; model printing time: 18m 58s; total estimated time: 25m 7s\n"
+        "; estimated first layer printing time (normal mode) = 6m 8s\n"
+    )
+    result = parse_gcode(gcode, density_g_cm3=1.25)
+    assert result.used_g == 4.0
+    assert result.total_time_min == pytest.approx(25 + 7 / 60, abs=0.001)
+    assert result.model_time_min == pytest.approx(18 + 58 / 60, abs=0.001)
+    assert result.first_layer_time_min == pytest.approx(6 + 8 / 60, abs=0.001)

@@ -42,7 +42,7 @@ Rezultat vsebuje absolutno pot do 3MF. Klicatelj mora pred čiščenjem premakni
 
 - En model, ena plošča, en filament, privzeto P1S.
 - Rezultati in G-code niso samodejno preneseni v GCS; lifecycle bo rešila orkestracija.
-- Če novi Orca ne poda gramov, podedovani profil v tem repozitoriju nima neposredno zapisane gostote. Takšna kombinacija mora varno odpovedati, dokler ne preverimo učinkovite gostote ali novega izvoza.
+- Izpeljani PETG profil v repozitoriju ne vključuje gostote. V v2 jo zanesljivo razrešimo iz pripetih podatkov OrcaSlicer 2.3.0 (1,25 g/cm³), skupaj s preostalimi podedovanimi nastavitvami. Če te verige ni mogoče preveriti, motor odpove.
 - Material in kakovost ne vplivata na trenutni ProtoTiskov cenik, saj integracije še nismo spreminjali.
 - Docker je namerno priklopljen le v testnem workflowu, brez sprememb `cloudbuild.yaml`.
 

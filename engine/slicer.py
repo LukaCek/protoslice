@@ -57,9 +57,9 @@ class SlicingEngine:
         return source
 
     @staticmethod
-    def _override_process(source: Path, target: Path, settings: SliceSettings):
-        # This is the exact process profile sent to Orca, never a global edit.
-        data = json.loads(source.read_text(encoding="utf-8"))
+    def _override_process(source: dict, target: Path, settings: SliceSettings):
+        # This is an effective (fully inherited) process profile, not a leaf.
+        data = dict(source)
         data["enable_support"] = "1" if settings.supports else "0"
         if settings.layer_height_mm is not None:
             data["layer_height"] = str(settings.layer_height_mm)
@@ -94,8 +94,12 @@ class SlicingEngine:
         try:
             model = workspace / ("input" + source.suffix.lower())
             shutil.copyfile(source, model)
+            printer_file = workspace / "printer.json"
             process_override = workspace / "process.json"
-            self._override_process(profile.process, process_override, request.settings)
+            filament_file = workspace / "filament.json"
+            printer_file.write_text(json.dumps(profile.printer_effective, ensure_ascii=False), encoding="utf-8")
+            filament_file.write_text(json.dumps(profile.filament_effective, ensure_ascii=False), encoding="utf-8")
+            self._override_process(profile.process_effective, process_override, request.settings)
             output = workspace / "output.3mf"
             # Orca 2.3 CLI requires the slicing-data parent to exist;
             # otherwise it exits with -53 (process exit code 203).
@@ -106,8 +110,8 @@ class SlicingEngine:
                 "--arrange", "1" if request.settings.auto_arrange else "0",
                 "--orient", "1" if request.settings.auto_orient else "0",
                 "--export-slicedata", str(slicedata_dir),
-                "--load-settings", str(profile.printer) + ";" + str(process_override),
-                "--load-filaments", str(profile.filament),
+                "--load-settings", str(printer_file) + ";" + str(process_override),
+                "--load-filaments", str(filament_file),
                 "--slice", "0",
                 "--debug", "2",
                 "--export-3mf", str(output),
@@ -153,11 +157,12 @@ class SlicingEngine:
                     import zipfile
                     with zipfile.ZipFile(output) as archive:
                         with archive.open("Metadata/plate_1.gcode") as stream:
-                            header = stream.read(16000).decode("utf-8", errors="replace")
+                            gcode_excerpt = stream.read(8 * 1024 * 1024).decode("utf-8", errors="replace")
                     lines = [
-                        line[:250] for line in header.splitlines()
+                        line[:200] for line in gcode_excerpt.splitlines()
                         if any(k in line.lower() for k in (
-                            "filament", "time", "material", "density", "volume", "max_z"
+                            "filament used", "estimated time", "printing time",
+                            "filament_density", "filament_type", "max_z_height"
                         ))
                     ][:35]
                     raise SlicingError(

@@ -1,4 +1,4 @@
-"""Read actual OrcaSlicer output with explicit units and strict validation."""
+"""Strict parsing of actual OrcaSlicer sliced 3MF metadata."""
 import math
 import re
 import zipfile
@@ -6,18 +6,23 @@ from pathlib import Path
 
 from .models import SliceMetrics, SlicingError
 
-# Real G-code files may be large; reading bounded metadata makes zip bombs harder.
 MAX_GCODE_BYTES = 256 * 1024 * 1024
 NUMBER = r"([0-9]+(?:\.[0-9]+)?)"
 
 
 def _numeric(gcode: str, label: str):
-    match = re.search(r"(?im)^\s*;\s*" + re.escape(label) + r"\s*=\s*" + NUMBER + r"\s*$", gcode)
+    match = re.search(r"(?im)^\s*;\s*" + re.escape(label) + r"\s*=\s*" + NUMBER + r"(?:\s*[,;].*)?\s*$", gcode)
     return float(match.group(1)) if match else None
 
 
 def _minutes(gcode: str, prefix: str):
-    match = re.search(r"(?im)^\s*;?\s*" + re.escape(prefix) + r"\s*[:=]\s*([^;\r\n]+)", gcode)
+    # Orca 2.3 uses e.g. one line:
+    # ; model printing time: 18m 58s; total estimated time: 25m 7s
+    match = re.search(
+        r"(?im)(?:^\s*;?\s*|;\s*)" + re.escape(prefix)
+        + r"\s*[:=]\s*([0-9hms\s]+?)(?=\s*(?:;|\r|\n|$))",
+        gcode,
+    )
     if not match:
         return None
     value = match.group(1).strip()
@@ -34,14 +39,13 @@ def parse_gcode(gcode: str, density_g_cm3: float | None = None) -> SliceMetrics:
     used_mm = _numeric(gcode, "filament used [mm]")
     if used_g is not None:
         source = "orca_gcode"
-        # If both values exist, they are a useful physical consistency check.
         if used_cm3 is not None and density_g_cm3 is not None:
             estimated = used_cm3 * density_g_cm3
             if estimated > 0 and abs(used_g - estimated) / estimated > 0.1:
                 raise SlicingError("invalid_statistics", "Orca mass and density-derived mass disagree")
     elif used_cm3 is not None and density_g_cm3 is not None:
         used_g = round(used_cm3 * density_g_cm3, 4)
-        source = "explicit_density"
+        source = "pinned_profile_density"
     else:
         raise SlicingError("missing_mass", "Missing filament mass and trustworthy density")
     total = _minutes(gcode, "total estimated time")
@@ -59,8 +63,7 @@ def parse_gcode(gcode: str, density_g_cm3: float | None = None) -> SliceMetrics:
     return SliceMetrics(
         used_g=round(used_g, 4), used_cm3=used_cm3, used_mm=used_mm,
         total_time_min=total, model_time_min=model,
-        first_layer_time_min=first_layer, max_z_mm=max_z,
-        mass_source=source,
+        first_layer_time_min=first_layer, max_z_mm=max_z, mass_source=source,
     )
 
 
@@ -71,8 +74,6 @@ def parse_sliced_3mf(path: Path, density_g_cm3: float | None = None) -> SliceMet
             if entry.file_size > MAX_GCODE_BYTES:
                 raise SlicingError("invalid_output", "G-code is too large")
             with archive.open(entry) as data:
-                # G-code metadata and toolpaths are ASCII-compatible. Decode up
-                # to the bounded size to search header or trailer statistics.
                 gcode = data.read(MAX_GCODE_BYTES + 1)
                 if len(gcode) > MAX_GCODE_BYTES:
                     raise SlicingError("invalid_output", "G-code exceeds size limit")
