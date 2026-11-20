@@ -16,22 +16,22 @@ def _numeric(gcode: str, label: str):
 
 
 def _minutes(gcode: str, prefix: str):
-    # Orca 2.3 uses e.g. one line:
-    # ; model printing time: 18m 58s; total estimated time: 25m 7s
+    # Orca 2.3 combines model and total times on one comment line.
+    # Find a named field first, then validate its entire time value so
+    # malformed values are errors rather than silently missing metrics.
     match = re.search(
-        r"(?im)(?:^\s*;?\s*|;\s*)" + re.escape(prefix)
-        + r"\s*[:=]\s*([0-9hms\s]+?)(?=\s*(?:;|\r|\n|$))",
+        r"(?im)(?:^\\s*;?\\s*|;\\s*)" + re.escape(prefix)
+        + r"\\s*[:=]\\s*([^;\\r\\n]+)",
         gcode,
     )
     if not match:
         return None
     value = match.group(1).strip()
-    segments = re.findall(r"(\d+)\s*([hms])\b", value, re.IGNORECASE)
-    if not segments or not re.fullmatch(r"\s*(?:\d+\s*[hms]\s*)+", value, re.IGNORECASE):
+    if not re.fullmatch(r"\\s*(?:\\d+\\s*[hms]\\s*)+", value, re.IGNORECASE):
         raise SlicingError("invalid_statistics", "Malformed print time in Orca output")
+    segments = re.findall(r"(\\d+)\\s*([hms])\\b", value, re.IGNORECASE)
     units = {"h": 60.0, "m": 1.0, "s": 1.0 / 60.0}
     return round(sum(int(n) * units[unit.lower()] for n, unit in segments), 4)
-
 
 def parse_gcode(gcode: str, density_g_cm3: float | None = None) -> SliceMetrics:
     used_g = _numeric(gcode, "filament used [g]")

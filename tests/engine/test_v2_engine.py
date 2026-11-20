@@ -47,7 +47,7 @@ def test_parser_density_only_when_explicit():
     assert err.value.code == "missing_mass"
     result = parse_gcode(text, density_g_cm3=1.27)
     assert result.used_g == pytest.approx(4.0767, abs=0.0001)
-    assert result.mass_source == "explicit_density"
+    assert result.mass_source == "pinned_profile_density"
 
 
 @pytest.mark.parametrize("gcode,code", [
@@ -156,7 +156,7 @@ def test_subprocess_receives_absolute_paths_and_persists_result(tmp_path, stub_o
 
 def test_subprocess_error_and_invalid_stats_clean_workspaces(tmp_path, stub_orca, monkeypatch):
     engine = make_engine(tmp_path, stub_orca)
-    for mode, code in (("fail", "orca_failed"), ("invalid_stats", "missing_mass")):
+    for mode, code in (("fail", "orca_failed"), ("invalid_stats", "missing_statistics")):
         monkeypatch.setenv("FAKE_ORCA_MODE", mode)
         with pytest.raises(SlicingError) as err:
             engine.slice(SliceRequest(CUBE))
