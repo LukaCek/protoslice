@@ -1,0 +1,25 @@
+name: ProtoSlice v2 real OrcaSlicer (Docker)
+on:
+  pull_request:
+    paths:
+      - 'engine/**'
+      - 'tests/integration/**'
+      - 'tests/fixtures/**'
+      - 'Dockerfile'
+      - '.github/workflows/v2-orca-smoke.yml'
+  workflow_dispatch:
+
+jobs:
+  live-orca:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the same OrcaSlicer 2.3.0 Docker image as the current service
+        run: docker build -t protoslice-v2-live .
+      - name: Run real OrcaSlicer (not a mock)
+        run: |
+          docker run --rm --cpus=2 --memory=3g --pids-limit=256 \
+            -e ORCA_LIVE=1 -e ORCASLICER_BIN=orcaslicer \
+            --entrypoint /bin/bash protoslice-v2-live \
+            -lc 'pip3 install pytest && python3 -m pytest -vv -s tests/integration/'

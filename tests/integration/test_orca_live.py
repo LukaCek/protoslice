@@ -1,0 +1,47 @@
+"""Real, opt-in OrcaSlicer smoke test inside a Docker container.
+
+These tests MUST NOT be replaced with mocked subprocesses or marked passed
+when the Orca executable is unavailable.
+"""
+import os
+from pathlib import Path
+import zipfile
+import pytest
+
+from engine import SlicingEngine, SliceRequest, SliceSettings, SlicingError
+
+if os.environ.get("ORCA_LIVE") != "1":
+    pytest.skip("Real OrcaSlicer test is opt-in (ORCA_LIVE=1)", allow_module_level=True)
+
+ROOT = Path(__file__).resolve().parents[2]
+CUBE = ROOT / "tests" / "fixtures" / "models" / "cube_20mm.stl"
+
+
+def test_real_orca_slices_cube_and_reports_actual_grams(tmp_path):
+    engine = SlicingEngine(
+        project_root=ROOT,
+        work_root=tmp_path,
+        timeout_seconds=240,
+    )
+    try:
+        result = engine.slice(SliceRequest(
+            source=CUBE, settings=SliceSettings(
+                supports=False, auto_arrange=True, auto_orient=True,
+                layer_height_mm=0.2,
+            ),
+        ))
+    except SlicingError as exc:
+        # Only the public bundled cube is used with ORCA_LIVE.
+        # Never log customer data in a public CI workflow.
+        pytest.fail(f"Real Orca error ({exc.code}): {exc.diagnostics or str(exc)}")
+    try:
+        assert result.metrics.used_g > 0
+        assert result.metrics.total_time_min > 0
+        # Vendor-inherited density is pinned to OrcaSlicer v2.3.0.
+        assert result.metrics.mass_source in ("orca_gcode", "pinned_profile_density")
+        with zipfile.ZipFile(result.output_3mf) as z:
+            assert "Metadata/plate_1.gcode" in z.namelist()
+            gcode = z.read("Metadata/plate_1.gcode")
+            assert len(gcode) > 1000, "Output must contain actual toolpaths"
+    finally:
+        engine.delete_job(result)
