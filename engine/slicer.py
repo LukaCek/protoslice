@@ -145,7 +145,25 @@ class SlicingEngine:
                     raise SlicingError("orca_failed", "OrcaSlicer reported failure")
             if not output.is_file() or output.stat().st_size == 0:
                 raise SlicingError("invalid_output", "Orca did not produce a sliced 3MF")
-            metrics = parse_sliced_3mf(output, density_g_cm3=profile.density_g_cm3)
+            try:
+                metrics = parse_sliced_3mf(output, density_g_cm3=profile.density_g_cm3)
+            except SlicingError as exc:
+                if os.environ.get("ORCA_LIVE") == "1":
+                    # Bounded diagnostics only for this public, fixed CI model.
+                    import zipfile
+                    with zipfile.ZipFile(output) as archive:
+                        with archive.open("Metadata/plate_1.gcode") as stream:
+                            header = stream.read(16000).decode("utf-8", errors="replace")
+                    lines = [
+                        line[:250] for line in header.splitlines()
+                        if any(k in line.lower() for k in (
+                            "filament", "time", "material", "density", "volume", "max_z"
+                        ))
+                    ][:35]
+                    raise SlicingError(
+                        exc.code, str(exc), diagnostics="GCODE HEADER: " + repr(lines)
+                    ) from exc
+                raise
             return SliceResult(
                 job_id=workspace.name, output_3mf=output, metrics=metrics,
                 printer_id=request.printer_id, process_id=request.process_id,
