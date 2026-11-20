@@ -112,6 +112,7 @@ def stub_orca(tmp_path):
         "assert pathlib.Path(args[-1]).is_file()\n"
         "assert all(pathlib.Path(p).is_absolute() for p in args[args.index('--load-settings')+1].split(';'))\n"
         "assert pathlib.Path(args[args.index('--load-filaments')+1]).is_absolute()\n"
+        "assert pathlib.Path(args[args.index('--export-slicedata')+1]).is_dir()\n"
         "payload='; filament used [cm3] = 3.21\\n; filament used [g] = 4.07\\n; total estimated time: 0h 12m 0s\\n'\n"
         "if mode == 'invalid_stats': payload='; filament used [cm3] = 3.21\\n'\n"
         "with zipfile.ZipFile(destination,'w') as z: z.writestr('Metadata/plate_1.gcode',payload)\n"

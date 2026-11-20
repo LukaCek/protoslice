@@ -97,11 +97,15 @@ class SlicingEngine:
             process_override = workspace / "process.json"
             self._override_process(profile.process, process_override, request.settings)
             output = workspace / "output.3mf"
+            # Orca 2.3 CLI requires the slicing-data parent to exist;
+            # otherwise it exits with -53 (process exit code 203).
+            slicedata_dir = workspace / "slicedata"
+            slicedata_dir.mkdir()
             command = [
                 executable,
                 "--arrange", "1" if request.settings.auto_arrange else "0",
                 "--orient", "1" if request.settings.auto_orient else "0",
-                "--export-slicedata", str(workspace / "slicedata"),
+                "--export-slicedata", str(slicedata_dir),
                 "--load-settings", str(profile.printer) + ";" + str(process_override),
                 "--load-filaments", str(profile.filament),
                 "--slice", "0",
