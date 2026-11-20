@@ -22,4 +22,4 @@ jobs:
           docker run --rm --cpus=2 --memory=3g --pids-limit=256 \
             -e ORCA_LIVE=1 -e ORCASLICER_BIN=orcaslicer \
             --entrypoint /bin/bash protoslice-v2-live \
-            -lc 'pip3 install pytest && python3 -m pytest -vv tests/integration/test_orca_live.py'
+            -lc 'pip3 install pytest && python3 -m pytest -vv -s tests/integration/'
